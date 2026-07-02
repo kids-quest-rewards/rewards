@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>⚔️ Kids Quest Rewards ⚔️</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!-- PWA Essentials -->
+<meta name="theme-color" content="#00ff88">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Kids Quest Rewards">
+
+<!-- Icons -->
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="512x512" href="splash-512.png">
+<link rel="apple-touch-icon" href="splash-1024.png">
+<link rel="mask-icon" href="maskable-icon.png" color="#00ff88">
+
+<!-- Splash Screen Background -->
+<style>
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background-color: #000;
+  background-image: url('splash-1920x1080.png');
+  background-size: cover;
+  background-position: center;
+}
+
+body {
+  font-family: Minecraft;
+  color:white;
+  text-align:center;
+  margin:0;
+  overflow-x:hidden;
+
+  background:
+    linear-gradient(rgba(0,0,0,0.75), rgba(0,0,0,0.95)),
+    url("https://images.unsplash.com/photo-1605902711622-cfb43c4437d1");
+  background-size:cover;
+  background-attachment:fixed;
+}
+
+canvas {
+  position:fixed;
+  top:0;
+  left:0;
+  pointer-events:none;
+  z-index:0;
+}
+
+h1 {color:#00ffcc; position:relative; z-index:1;}
+
+.theme1 {background:rgba(30,60,114,0.85);}
+.theme2 {background:rgba(19,78,94,0.85);}
+.theme3 {background:rgba(66,39,90,0.85);}
+.theme4 {background:rgba(15,32,39,0.85);}
+
+.card {
+  margin:15px;
+  padding:15px;
+  border-radius:12px;
+  backdrop-filter: blur(6px);
+  position:relative;
+  z-index:1;
+}
+
+button {
+  padding:8px;
+  margin:5px;
+  border:none;
+  border-radius:6px;
+  cursor:pointer;
+}
+
+.add {background:#00ffcc;color:black;}
+.danger {background:#ff4d4d;color:white;}
+
+.questBox {
+  background:rgba(0,0,0,0.4);
+  padding:6px;
+  margin:6px;
+  border-radius:6px;
+  text-align:left;
+}
+
+img.profile {
+  width:80px;
+  height:80px;
+  border-radius:50%;
+  object-fit:cover;
+}
+
+.flex {
+  display:flex;
+  gap:20px;
+  justify-content:center;
+  flex-wrap:wrap;
+}
+
+.column {
+  width:30%;
+  min-width:250px;
+}
+</style>
+</head>
+
+<body>
+
+<canvas id="particles"></canvas>
+
+<h1>🎮 Kids Quest Rewards ⚔️</h1>
+
+<div id="home"></div>
+<div id="playerPage" style="display:none;"></div>
+
+<script>
+// PARTICLES
+const canvas = document.getElementById("particles");
+const ctx = canvas.getContext("2d");
+
+let particles = [];
+
+function resizeCanvas(){
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+resizeCanvas();
+window.addEventListener("resize", resizeCanvas);
+
+function createParticle(){
+  particles.push({
+    x: Math.random()*canvas.width,
+    y: canvas.height,
+    size: Math.random()*4+2,
+    speed: Math.random()*1+0.5,
+    alpha: Math.random()
+  });
+}
+
+function animate(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  if(particles.length < 80) createParticle();
+
+  particles.forEach((p,i)=>{
+    p.y -= p.speed;
+    p.alpha -= 0.002;
+
+    ctx.fillStyle = `rgba(0,255,200,${p.alpha})`;
+    ctx.beginPath();
+    ctx.arc(p.x,p.y,p.size,0,Math.PI*2);
+    ctx.fill();
+
+    if(p.alpha <= 0){
+      particles.splice(i,1);
+    }
+  });
+
+  requestAnimationFrame(animate);
+}
+animate();
+
+// PIN
+const PIN = "3717";
+let isAdmin=false;
+let lockTimer=null;
+
+function startLock(){
+  clearTimeout(lockTimer);
+  lockTimer = setTimeout(()=>{
+    isAdmin=false;
+    alert("🔒 Locked");
+    showHome();
+  },300000);
+}
+
+function unlock(){
+  if(prompt("PIN")===PIN){
+    isAdmin=true;
+    startLock();
+    showHome();
+  } else alert("Wrong PIN");
+}
+
+function lockNow(){
+  isAdmin = false;
+  clearTimeout(lockTimer);
+  alert("🔒 Locked");
+  showHome();
+}
+
+function adminAction(){ if(isAdmin) startLock(); }
+
+// SOUND
+const gainSound = new Audio("https://assets.mixkit.co/active_storage/sfx/1114/1114-preview.mp3");
+const rewardSound = new Audio("https://assets.mixkit.co/active_storage/sfx/270/270-preview.mp3");
+
+// DATA
+let data = JSON.parse(localStorage.getItem('xpFinal')) || {
+  players: [],
+  rewards: [
+    {name:"Candy",cost:10},
+    {name:"Screen Time",cost:20},
+    {name:"Toy",cost:50}
+  ]
+};
+
+function save(){ localStorage.setItem('xpFinal', JSON.stringify(data)); }
+
+let currentPlayer=null;
+
+function getTheme(i){
+  return ["theme1","theme2","theme3","theme4"][i%4];
+}
+
+// HOME
+function showHome(){
+  document.getElementById("home").style.display="block";
+  document.getElementById("playerPage").style.display="none";
+
+  let html=`<button onclick="unlock()">🔒 Unlock</button>
+  ${isAdmin ? `<button onclick="lockNow()">🔒 Lock Now</button>` : ""}
+  <br><br>`;
+
+  if(isAdmin){
+    html+=`<input id="name"><button onclick="addPlayer()" class="add">Add</button>`;
+  }
+
+  data.players.forEach((p,i)=>{
+    html+=`
+    <div class="card ${getTheme(i)}">
+      ${p.photo?`<img src="${p.photo}" class="profile">`:``}
+      
+      <h2 onclick="openPlayer(${i})">${p.name}</h2>
+      <p>${p.xp} XP</p>
+
+      ${isAdmin ? `<button class="danger" onclick="deletePlayer(${i})">❌ Delete</button>` : ""}
+
+    </div>`;
+  });
+
+  document.getElementById("home").innerHTML=html;
+}
+
+// ADD PLAYER
+function addPlayer(){
+  adminAction();
+  let name=document.getElementById("name").value;
+  if(!name)return;
+
+  data.players.push({name,xp:0,log:[],daily:[],weekly:[],photo:null});
+  save(); showHome();
+}
+
+// DELETE PLAYER
+function deletePlayer(i){
+  if(!isAdmin) return;
+  adminAction();
+
+  if(confirm("Delete this player?")){
+    data.players.splice(i,1);
+    save();
+    showHome();
+  }
+}
+
+function openPlayer(i){
+  currentPlayer=i;
+  document.getElementById("home").style.display="none";
+  document.getElementById("playerPage").style.display="block";
+  renderPlayer();
+}
+
+// XP CHANGE
+function changeXP(amount){
+  if(!isAdmin) return;
+  adminAction();
+
+  let p=data.players[currentPlayer];
+  let reason=prompt("Reason?") || "Manual";
+
+  if(p.xp + amount < 0){
+    alert("Too low!");
+    return;
+  }
+
+  p.xp += amount;
+  p.log.unshift(`${reason} ${amount>0?'+':''}${amount}`);
+  gainSound.play();
+
+  save(); renderPlayer();
+}
+
+// TASK
+function completeTask(type,i){
+  if(!isAdmin)return;
+  adminAction();
+
+  let p=data.players[currentPlayer];
+  let c=p[type][i];
+
+  if(c.done)return;
+
+  c.done=true;
+  p.xp+=c.xp;
+  p.log.unshift(`${c.task} +${c.xp}`);
+  gainSound.play();
+
+  save(); renderPlayer();
+}
+
+function addChore(type){
+  if(!isAdmin)return;
+  adminAction();
+
+  let t=prompt("Task?");
+  let x=parseInt(prompt("XP?"));
+  if(!t||!x)return;
+
+  data.players[currentPlayer][type].push({task:t,xp:x,done:false});
+  save(); renderPlayer();
+}
+
+// REWARD
+function claimReward(i){
+  let p=data.players[currentPlayer];
+  let r=data.rewards[i];
+
+  if(p.xp<r.cost){alert("Not enough");return;}
+
+  p.xp-=r.cost;
+  p.log.unshift(`🎁 ${r.name}`);
+  rewardSound.play();
+
+  save(); renderPlayer();
+}
+
+function addReward(){
+  if(!isAdmin) return;
+  adminAction();
+
+  let n=prompt("Reward?");
+  let c=parseInt(prompt("Cost?"));
+  if(!n||!c) return;
+
+  data.rewards.push({name:n,cost:c});
+  save(); renderPlayer();
+}
+
+function deleteReward(i){
+  if(!isAdmin) return;
+  adminAction();
+
+  data.rewards.splice(i,1);
+  save(); renderPlayer();
+}
+
+// UI
+function renderPlayer(){
+  let p=data.players[currentPlayer];
+
+  let daily=p.daily.map((c,i)=>`
+  <div class="questBox">
+    <input type="checkbox" ${c.done?"checked":""} onclick="completeTask('daily',${i})">
+    ${c.task} (+${c.xp})
+  </div>`).join("");
+
+  let weekly=p.weekly.map((c,i)=>`
+  <div class="questBox">
+    <input type="checkbox" ${c.done?"checked":""} onclick="completeTask('weekly',${i})">
+    ${c.task} (+${c.xp})
+  </div>`).join("");
+
+  let rewards=data.rewards.map((r,i)=>`
+    <div>
+      <button onclick="claimReward(${i})">🎁 ${r.name} (${r.cost})</button>
+      ${isAdmin?`<button class="danger" onclick="deleteReward(${i})">x</button>`:""}
+    </div>
+  `).join("");
+
+  let log=p.log.slice(0,8).map(l=>`<div>${l}</div>`).join("");
+
+  document.getElementById("playerPage").innerHTML=`
+    <button onclick="showHome()">⬅ Back</button>
+
+    <div class="card ${getTheme(currentPlayer)}">
+      <h2>${p.name}</h2>
+      <h1>${p.xp} XP</h1>
+
+      ${isAdmin?`
+        <button onclick="changeXP(1)">➕ +1</button>
+        <button onclick="changeXP(-1)">➖ -1</button>
+      `:""}
+
+      <div class="flex">
+
+        <div class="column">
+          <h3>📅 Daily</h3>
+          ${daily}
+          <h3>📆 Weekly</h3>
+          ${weekly}
+          ${isAdmin?`
+          <button class="add" onclick="addChore('daily')">+ Daily</button>
+          <button class="add" onclick="addChore('weekly')">+ Weekly</button>`:""}
+        </div>
+
+        <div class="column">
+          <h3>🛒 Rewards</h3>
+          ${rewards}
+          ${isAdmin?`<button class="add" onclick="addReward()">+ Add Reward</button>`:""}
+        </div>
+
+        <div class="column">
+          <h3>📜 History</h3>
+          ${log || "None"}
+        </div>
+
+      </div>
+    </div>`;
+}
+
+showHome();
+</script>
+
+</body>
+</html>

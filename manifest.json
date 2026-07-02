@@ -1,0 +1,21 @@
+{
+  "name": "Kids Quest Rewards",
+  "short_name": "Kids Quest",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#00ff88",
+  "icons": [
+    {
+      "src": "splash-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "maskable-icon.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
